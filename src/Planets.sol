@@ -3,9 +3,20 @@ pragma solidity ^0.8.13;
 
 import "solmate/tokens/ERC721.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
-contract Planets is ERC721 {
+contract Planets is ERC721, Ownable {
     uint256 public currentTokenId;
+
+    // equivalent $RTS
+    // ER = Equivalent Rates
+    uint public totalERSupply;
+    uint8 public decimals;
+    uint public tokensMinted;
+    uint public rewardEra;
+    uint public maxSupplyForEra;
+    uint public miningTarget;
+    uint public latestDifficultyPeriodStarted;
 
     constructor(
         string memory _name,
