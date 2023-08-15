@@ -21,7 +21,7 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     uint public MINING_RATE_FACTOR = 60; //mint the token 60 times less often than ether
     uint public latestDifficultyPeriodStarted;
     uint public MINIMUM_TARGET_DIFFICULTY = 2 ** 16;
-    uint public MAXIMUM_TARGET_DIFFICULTY = 2 ** 234;
+    uint public MAXIMUM_TARGET_DIFFICULTY = 2 ** 245; // TODO: should change to 234?
     uint public TARGET_DIVISOR = 2000;
     uint public QUOTIENT_LIMIT = TARGET_DIVISOR / 2;
     uint public MAX_ADJUSTMENT_PERCENT = 100;
@@ -50,6 +50,7 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         setBaseUri(_baseUri);
         challengeNumber = blockhash(block.number - 1);
         latestDifficultyPeriodStarted = block.number;
+        difficulty = MAXIMUM_TARGET_DIFFICULTY;
     }
 
     // NFT Functions
@@ -74,11 +75,11 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         bytes32 digest = _hash(nonce, challengeDigest);
 
         //  digest must be smaller than difficulty
-        if (uint256(digest) > difficulty) revert();
+        if (uint256(digest) > difficulty) revert("Nonce incorrect");
 
         // only allow for one solution
         bytes32 solution = _solutionForChallenge[challengeNumber];
-        if (solution != 0x0) revert("Solution already exist");
+        if (solution != 0x0) revert("Solution exist");
 
         _solutionForChallenge[challengeNumber] = digest;
 
@@ -114,11 +115,18 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         bytes32 challengeDigest
     ) internal virtual override returns (bytes32 digest) {
         bytes32 digestResult = keccak256(
-            abi.encode(challengeNumber, msg.sender, nonce)
+            abi.encodePacked(challengeNumber, msg.sender, nonce)
         );
         if (digestResult != challengeDigest) revert("Digest is different");
 
         return digestResult;
+    }
+
+    function checkHash(
+        uint256 nonce,
+        bytes32 challengeDigest
+    ) public returns (bytes32 digest) {
+        return _hash(nonce, challengeDigest);
     }
 
     function getChallengeNumber() public view returns (bytes32) {

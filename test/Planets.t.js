@@ -1,0 +1,77 @@
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+const hre = require("hardhat");
+const { time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { mine } = require("@nomicfoundation/hardhat-network-helpers");
+
+describe("Planets", function () {
+  it("Should set the right unlockTime", async function () {
+    await mine(1000);
+
+    const [owner] = await ethers.getSigners();
+
+    const Planets = await ethers.getContractFactory("Planets");
+
+    const planets = await Planets.deploy(
+      "RatesPlanets",
+      "RP",
+      "https://ratesprotocol.com/api/json/"
+    );
+
+    // await planets.deployed();
+
+    // assert that the value is correct
+    const miningDifficulty = await planets.getMiningDifficulty();
+    console.log("miningDifficulty", miningDifficulty);
+    const challengeNumber = await planets.getChallengeNumber();
+    console.log("challengeNumber", challengeNumber);
+
+    let [nonce, hash] = await solveChallenge(
+      challengeNumber,
+      owner.address,
+      miningDifficulty
+    );
+    console.log("nonce", nonce);
+    console.log("hash", hash);
+
+    const hashCheck = await planets.checkHash(nonce, hash);
+    expect(hashCheck == hash);
+
+    await planets.mint(nonce, hash);
+    const ownerToken = await planets.ownerOf("1");
+    expect(ownerToken == owner.address);
+
+    // rates
+
+    hash = BigInt(hash);
+    const rates = hash & 0x3e8n;
+    const prts = (hash >> (12n * 1n)) & 0x3e8n;
+    const arts = (hash >> (12n * 2n)) & 0x3e8n;
+    const mrts = (hash >> (12n * 3n)) & 0x3e8n;
+
+    console.log("rates", rates);
+    console.log("prts", prts);
+    console.log("arts", arts);
+    console.log("mrts", mrts);
+  });
+});
+
+const solveChallenge = async (challengeNumber, sender, difficulty) => {
+  let nonce = 1;
+  let hash;
+  while (true) {
+    console.log(nonce);
+    hash = ethers.solidityPackedKeccak256(
+      ["bytes32", "address", "uint"],
+      [challengeNumber, sender, nonce]
+    );
+
+    if (parseInt(hash) < difficulty) {
+      console.log(hash);
+      break;
+    }
+    nonce = ethers.hexlify(ethers.randomBytes(32));
+  }
+
+  return [nonce, hash];
+};
