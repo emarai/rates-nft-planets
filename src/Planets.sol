@@ -15,7 +15,7 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     uint public totalERSupply;
 
     // mining proof-of-work, adjustment, difficulty
-    mapping(bytes32 => bytes32) _solutionForChallenge;
+    mapping(uint256 => bytes32) public digestForTokenId;
     uint public epochCount; // == planetminted
     uint public BLOCKS_PER_READJUSTMENT = 1024;
     uint public MINING_RATE_FACTOR = 60; //mint the token 60 times less often than ether
@@ -32,15 +32,6 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     uint public rewardEra = 0;
     uint public maxSupplyForEra = 1000000000 * 10 ** uint(decimals);
     uint public totalRtsPerEra = 0;
-
-    struct PlanetResource {
-        uint256 RTS; // Rates
-        // uint256 ARTS; // Animal resource
-        // uint256 PRTS; // Plant resource
-        // uint256 MRTS; // Mineral resource
-    }
-
-    mapping(uint256 => PlanetResource) public planetResources;
 
     constructor(
         string memory _name,
@@ -70,6 +61,7 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         uint256 nonce,
         bytes32 challengeDigest
     ) public virtual override returns (bool success) {
+        currentTokenId = ++currentTokenId;
         // CHALLENGE CHECK
         // check digest
         bytes32 digest = _hash(nonce, challengeDigest);
@@ -77,33 +69,16 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         //  digest must be smaller than difficulty
         if (uint256(digest) > difficulty) revert("Nonce incorrect");
 
-        // only allow for one solution
-        bytes32 solution = _solutionForChallenge[challengeNumber];
+        // only allow for one solution, each tokenId
+        bytes32 solution = digestForTokenId[currentTokenId];
         if (solution != 0x0) revert("Solution exist");
 
-        _solutionForChallenge[challengeNumber] = digest;
-
-        // REWARD CHECK ($RTS inside minted planet)
-        uint averageRtsAmount = _reward();
-
-        uint rts25Percent = (averageRtsAmount * 25) / 100;
-        uint minimumRts = averageRtsAmount - rts25Percent;
-        uint maximumRts = averageRtsAmount + rts25Percent;
-
-        uint step = (maximumRts - minimumRts) / 100;
-
-        uint256 random = _random() % 100;
-
-        uint rtsForPlanet = minimumRts + (random * step);
+        digestForTokenId[currentTokenId] = digest;
 
         // mint nft
-        currentTokenId = ++currentTokenId;
         _safeMint(msg.sender, currentTokenId);
 
-        planetResources[currentTokenId] = PlanetResource({RTS: rtsForPlanet});
-
-        // update challenge
-        _newEpoch(rtsForPlanet);
+        uint rtsForPlanet = uint256(digest) & 0x3e8; // RTS MASK
         tokensMinted += rtsForPlanet;
 
         // TODO: diagnostics
@@ -138,8 +113,7 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     }
 
     function getMiningReward() public view returns (uint) {
-        // duplicate: _reward()
-        return startingAverageReward / (2 ** rewardEra);
+        return startingAverageReward;
     }
 
     function getMiningTarget() public view returns (uint) {
@@ -150,9 +124,23 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         return currentTokenId;
     }
 
+    function getTotalStatsPerTokenId(
+        uint256 id
+    ) public view returns (uint, uint, uint, uint, uint, uint) {
+        uint256 digest = uint256(digestForTokenId[id]);
+        uint rts = digest & 0x3e8; // RTS MASK
+        uint prts = (digest >> 12) & 0x3e8; // PRTS MASK
+        uint arts = (digest >> (12 * 2)) & 0x3e8; // ARTS MASK
+        uint mrts = (digest >> (12 * 3)) & 0x3e8; // ARTS MASK
+        uint x = (digest >> (12 * 4)) & 0x3e8; // X MASK
+        uint y = (digest >> (12 * 5)) & 0x3e8; // Y MASK
+
+        return (rts, prts, arts, mrts, x, y);
+    }
+
     // internal functions from abstract
     function _reward() internal virtual override returns (uint) {
-        return startingAverageReward / (2 ** rewardEra);
+        return 500; // startingAverageReward / (2 ** rewardEra);
     }
 
     function _newEpoch(

@@ -44,15 +44,36 @@ describe("Planets", function () {
     // rates
 
     hash = BigInt(hash);
-    const rates = hash & 0x3e8n;
+    const rts = hash & 0x3e8n;
     const prts = (hash >> (12n * 1n)) & 0x3e8n;
     const arts = (hash >> (12n * 2n)) & 0x3e8n;
     const mrts = (hash >> (12n * 3n)) & 0x3e8n;
+    const x = (hash >> (12n * 4n)) & 0x3e8n;
+    const y = (hash >> (12n * 5n)) & 0x3e8n;
 
-    console.log("rates", rates);
+    const [
+      rtsContract,
+      prtsContract,
+      artsContract,
+      mrtsContract,
+      xContract,
+      yContract,
+    ] = await planets.getTotalStatsPerTokenId("1");
+
+    expect(rts == rtsContract);
+    expect(prts == prtsContract);
+    expect(prts == prtsContract);
+    expect(arts == artsContract);
+    expect(mrts == mrtsContract);
+    expect(x == xContract);
+    expect(y == yContract);
+
+    console.log("rts", rts);
     console.log("prts", prts);
     console.log("arts", arts);
     console.log("mrts", mrts);
+    console.log("x", x);
+    console.log("y", y);
   });
 });
 
