@@ -2,11 +2,12 @@
 pragma solidity ^0.8.13;
 
 import "solmate/tokens/ERC721.sol";
-import "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "./AbstractERC918.sol";
+import "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 contract Planets is AbstractERC918, ERC721, Ownable {
+    using Strings for uint256;
     uint256 public currentTokenId;
     string public baseUri;
 
@@ -50,9 +51,12 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     }
 
     function tokenURI(
-        uint256 id
+        uint256 tokenId
     ) public view virtual override returns (string memory) {
-        return Strings.toString(id);
+        return
+            bytes(baseUri).length > 0
+                ? string(abi.encodePacked(baseUri, tokenId.toString(), ".json"))
+                : "";
     }
 
     // ERC-918 Functions
