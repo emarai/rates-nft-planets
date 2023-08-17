@@ -34,6 +34,8 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     uint public maxSupplyForEra = 1000000000 * 10 ** uint(decimals);
     uint public totalRtsPerEra = 0;
 
+    event DifficultyChange(uint difficulty);
+
     constructor(
         string memory _name,
         string memory _symbol,
@@ -214,6 +216,8 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         {
             difficulty = MAXIMUM_TARGET_DIFFICULTY;
         }
+
+        emit DifficultyChange(difficulty);
         return difficulty;
     }
 
