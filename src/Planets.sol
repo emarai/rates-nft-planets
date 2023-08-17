@@ -33,6 +33,7 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     uint public rewardEra = 0;
     uint public maxSupplyForEra = 1000000000 * 10 ** uint(decimals);
     uint public totalRtsPerEra = 0;
+    uint public BASE_REWARD = 250;
 
     event DifficultyChange(uint difficulty);
 
@@ -135,9 +136,9 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     ) public view returns (uint, uint, uint, uint, uint, uint) {
         uint256 digest = uint256(digestForTokenId[id]);
         uint rts = digest & 0x3e8; // RTS MASK
-        uint prts = (digest >> 12) & 0x3e8; // PRTS MASK
-        uint arts = (digest >> (12 * 2)) & 0x3e8; // ARTS MASK
-        uint mrts = (digest >> (12 * 3)) & 0x3e8; // ARTS MASK
+        uint prts = BASE_REWARD + ((digest >> 12) & 0x3e8); // PRTS MASK
+        uint arts = BASE_REWARD + ((digest >> (12 * 2)) & 0x3e8); // ARTS MASK
+        uint mrts = BASE_REWARD + ((digest >> (12 * 3)) & 0x3e8); // ARTS MASK
         uint x = (digest >> (12 * 4)) & 0x3e8; // X MASK
         uint y = (digest >> (12 * 5)) & 0x3e8; // Y MASK
 
