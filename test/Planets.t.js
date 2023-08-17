@@ -8,9 +8,8 @@ const { solveChallenge } = require("../script/utils");
 const BASE_REWARD = 250n;
 
 describe("Planets", function () {
-  it("Should set the right unlockTime", async function () {
-    await mine(1000);
 
+  async function deployContract() {
     const [owner] = await ethers.getSigners();
 
     const Planets = await ethers.getContractFactory("Planets");
@@ -21,7 +20,52 @@ describe("Planets", function () {
       "https://ratesprotocol.com/api/json/"
     );
 
-    // await planets.deployed();
+    return { planets, owner };
+  }
+
+  it("Should buy mining rig and mint", async function () {
+    await mine(1000);
+
+    const { planets, owner } = await deployContract();
+
+    await planets.upgradeMiningRig(10, { value: ethers.parseEther((0.03 * 10).toString()) });
+
+    const currentMiningRig = await planets.miningRigForAddress(owner.address);
+
+    expect(currentMiningRig).to.equal(10);
+
+    const miningDifficulty = await planets.getMiningDifficulty();
+    const challengeNumber = await planets.getChallengeNumber();
+
+    let [nonce, hash] = await solveChallenge(
+      challengeNumber,
+      owner.address,
+      miningDifficulty
+    );
+
+    const hashCheck = await planets.checkHash(nonce, hash);
+    expect(hashCheck).to.equal(hash);
+
+    await planets.mint(nonce, hash);
+    const ownerToken = await planets.ownerOf("1");
+
+    // rates
+
+    hash = BigInt(hash);
+    let rts = hash & 0x3e8n;
+    rts += (rts * 80n) / 100n;
+
+
+    const [
+      rtsContract,
+    ] = await planets.getTotalStatsPerTokenId("1");
+
+    expect(rts).to.equal(rtsContract);
+  })
+  it("Should mint with correct stats", async function () {
+    await mine(1000);
+
+    const { planets, owner } = await deployContract();
 
     // assert that the value is correct
     const miningDifficulty = await planets.getMiningDifficulty();

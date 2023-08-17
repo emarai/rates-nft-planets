@@ -35,6 +35,25 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     uint public totalRtsPerEra = 0;
     uint public BASE_REWARD = 250;
 
+    // mining rig
+    uint public miningRigUpgradePrice = 0.03 ether;
+    uint8 public MAXIMUM_RIG_LEVEL = 10;
+    uint8[] public miningRigPercentage = [
+        0,
+        5,
+        10,
+        15,
+        22,
+        29,
+        36,
+        46,
+        56,
+        66,
+        80
+    ];
+    mapping(address => uint8) public miningRigForAddress;
+    mapping(uint256 => uint256) public rtsBonusForTokenId;
+
     event DifficultyChange(uint difficulty);
 
     constructor(
@@ -86,17 +105,43 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         _safeMint(msg.sender, currentTokenId);
 
         uint rtsForPlanet = uint256(digest) & 0x3e8; // RTS MASK
-        tokensMinted += rtsForPlanet;
+
+        // bonus rts from mining rig
+        uint rtsBonus = (miningRigPercentage[miningRigForAddress[msg.sender]] *
+            rtsForPlanet) / 100;
+
+        if (rtsBonus > 0) {
+            rtsBonusForTokenId[currentTokenId] = rtsBonus;
+        }
+        tokensMinted += rtsForPlanet + rtsBonus;
 
         // TODO: diagnostics
         return true;
     }
 
+    function setMiningRigUpgradePrice(uint256 priceInEth) public onlyOwner {
+        miningRigUpgradePrice = priceInEth;
+    }
+
+    function upgradeMiningRig(uint8 amount) public payable {
+        require(msg.value >= miningRigUpgradePrice * amount);
+
+        uint8 level = miningRigForAddress[msg.sender] + amount;
+
+        require(level <= MAXIMUM_RIG_LEVEL);
+
+        miningRigForAddress[msg.sender] = level;
+    }
+
+    function withdraw() public onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
     function _hash(
         uint256 nonce,
         bytes32 challengeDigest
-    ) internal virtual override returns (bytes32 digest) {
-        bytes32 digestResult = keccak256(
+    ) internal view virtual override returns (bytes32 digestResult) {
+        digestResult = keccak256(
             abi.encodePacked(challengeNumber, msg.sender, nonce)
         );
         if (digestResult != challengeDigest) revert("Digest is different");
@@ -107,7 +152,7 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     function checkHash(
         uint256 nonce,
         bytes32 challengeDigest
-    ) public returns (bytes32 digest) {
+    ) public view returns (bytes32 digest) {
         return _hash(nonce, challengeDigest);
     }
 
@@ -135,7 +180,7 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         uint256 id
     ) public view returns (uint, uint, uint, uint, uint, uint) {
         uint256 digest = uint256(digestForTokenId[id]);
-        uint rts = digest & 0x3e8; // RTS MASK
+        uint rts = (digest & 0x3e8) + rtsBonusForTokenId[id]; // RTS MASK
         uint prts = BASE_REWARD + ((digest >> 12) & 0x3e8); // PRTS MASK
         uint arts = BASE_REWARD + ((digest >> (12 * 2)) & 0x3e8); // ARTS MASK
         uint mrts = BASE_REWARD + ((digest >> (12 * 3)) & 0x3e8); // ARTS MASK
