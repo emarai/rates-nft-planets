@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "solmate/utils/FixedPointMathLib.sol";
 import "solmate/tokens/ERC721.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
-import "./AbstractERC918.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
+import "./AbstractERC918.sol";
 
 contract Planets is AbstractERC918, ERC721, Ownable {
     using Strings for uint256;
@@ -180,14 +181,45 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         uint256 id
     ) public view returns (uint, uint, uint, uint, uint, uint) {
         uint256 digest = uint256(digestForTokenId[id]);
-        uint rts = (digest & 0x3e8) + rtsBonusForTokenId[id]; // RTS MASK
-        uint prts = BASE_REWARD + ((digest >> 12) & 0x3e8); // PRTS MASK
-        uint arts = BASE_REWARD + ((digest >> (12 * 2)) & 0x3e8); // ARTS MASK
-        uint mrts = BASE_REWARD + ((digest >> (12 * 3)) & 0x3e8); // ARTS MASK
         uint x = (digest >> (12 * 4)) & 0x3e8; // X MASK
         uint y = (digest >> (12 * 5)) & 0x3e8; // Y MASK
 
+        uint planetZoneMultiplier = getPlanetZone(x, y) * 10;
+
+        uint rts = (digest & 0x3e8) + rtsBonusForTokenId[id]; // RTS MASK
+
+        uint prts = BASE_REWARD + ((digest >> 12) & 0x3e8); // PRTS MASK
+        uint arts = BASE_REWARD + ((digest >> (12 * 2)) & 0x3e8); // ARTS MASK
+        uint mrts = BASE_REWARD + ((digest >> (12 * 3)) & 0x3e8); // ARTS MASK
+
+        if (planetZoneMultiplier > 0) {
+            rts += (rts * planetZoneMultiplier) / 100;
+            prts += (prts * planetZoneMultiplier) / 100;
+            arts += (arts * planetZoneMultiplier) / 100;
+            mrts += (mrts * planetZoneMultiplier) / 100;
+        }
+
         return (rts, prts, arts, mrts, x, y);
+    }
+
+    function getPlanetZone(uint x, uint y) public pure returns (uint zone) {
+        if (x > 500) {
+            x -= 500;
+        } else {
+            x = 500 - x;
+        }
+
+        if (y > 500) {
+            y -= 500;
+        } else {
+            y = 500 - y;
+        }
+
+        uint distFromMiddle = FixedPointMathLib.sqrt(x ** 2 + y ** 2);
+
+        zone = distFromMiddle / 80;
+
+        return zone;
     }
 
     // internal functions from abstract

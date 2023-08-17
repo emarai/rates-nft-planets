@@ -52,8 +52,13 @@ describe("Planets", function () {
     // rates
 
     hash = BigInt(hash);
+    const x = (hash >> (12n * 4n)) & 0x3e8n;
+    const y = (hash >> (12n * 5n)) & 0x3e8n;
+    const planetZoneMultiplier = BigInt(getPlanetZone(x, y)) * 10n;
+
     let rts = hash & 0x3e8n;
     rts += (rts * 80n) / 100n;
+    rts += (rts * planetZoneMultiplier) / 100n;
 
 
     const [
@@ -92,12 +97,27 @@ describe("Planets", function () {
     // rates
 
     hash = BigInt(hash);
-    const rts = hash & 0x3e8n;
-    const prts = BASE_REWARD + ((hash >> (12n * 1n)) & 0x3e8n);
-    const arts = BASE_REWARD + ((hash >> (12n * 2n)) & 0x3e8n);
-    const mrts = BASE_REWARD + ((hash >> (12n * 3n)) & 0x3e8n);
     const x = (hash >> (12n * 4n)) & 0x3e8n;
     const y = (hash >> (12n * 5n)) & 0x3e8n;
+
+    const planetZoneMultiplier = BigInt(getPlanetZone(x, y)) * 10n;
+
+    let rts = hash & 0x3e8n;
+    let prts = BASE_REWARD + ((hash >> (12n * 1n)) & 0x3e8n);
+    let arts = BASE_REWARD + ((hash >> (12n * 2n)) & 0x3e8n);
+    let mrts = BASE_REWARD + ((hash >> (12n * 3n)) & 0x3e8n);
+
+    console.log("rts", rts);
+    console.log("prts", prts);
+    console.log("arts", arts);
+    console.log("mrts", mrts);
+    console.log("x", x);
+    console.log("y", y);
+
+    rts += (rts * planetZoneMultiplier) / 100n;
+    prts += (prts * planetZoneMultiplier) / 100n;
+    arts += (arts * planetZoneMultiplier) / 100n;
+    mrts += (mrts * planetZoneMultiplier) / 100n;
 
     const [
       rtsContract,
@@ -108,6 +128,14 @@ describe("Planets", function () {
       yContract,
     ] = await planets.getTotalStatsPerTokenId("1");
 
+    console.log("rts", rts);
+    console.log("prts", prts);
+    console.log("arts", arts);
+    console.log("mrts", mrts);
+    console.log("x", x);
+    console.log("y", y);
+    console.log("planetZoneMultiplier", planetZoneMultiplier);
+
     expect(rts).to.equal(rtsContract);
     expect(prts).to.equal(prtsContract);
     expect(arts).to.equal(artsContract);
@@ -115,11 +143,28 @@ describe("Planets", function () {
     expect(x).to.equal(xContract);
     expect(y).to.equal(yContract);
 
-    console.log("rts", rts);
-    console.log("prts", prts);
-    console.log("arts", arts);
-    console.log("mrts", mrts);
-    console.log("x", x);
-    console.log("y", y);
   });
+
+  it("getPlanetZone should work", async function () {
+
+    const { planets, owner } = await deployContract();
+
+    const planetZone = await planets.getPlanetZone(0, 0);
+
+    expect(planetZone).to.equal(getPlanetZone(0n, 0n));
+
+  })
+
+  function getPlanetZone(x, y) {
+    const xFromMiddle = Math.abs(parseInt((x - 500n).toString()));
+    const yFromMiddle = Math.abs(parseInt((y - 500n).toString()));
+
+    console.log(xFromMiddle, yFromMiddle)
+
+    const distance = Math.sqrt(xFromMiddle ** 2 + yFromMiddle ** 2);
+    console.log("distance", distance);
+
+    return parseInt(distance / 80);
+  }
+
 });
