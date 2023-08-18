@@ -1,8 +1,6 @@
 # Rates NFT Planets (ERC-721 / ERC-918)
 
-```
-Humanity has discovered a revolutionary material capable of doing Room-Temperature Superconductor ($RTS), also referred to as Rates. Explore new planets, extract resources, and elevate in a new age of technological marvels.
-```
+_Humanity has discovered a revolutionary material capable of doing Room-Temperature Superconductor (\$RTS), also referred to as Rates. Explore new planets, extract resources, and elevate in a new age of technological marvels._
 
 ## What is it?
 
