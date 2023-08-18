@@ -19,11 +19,11 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
     // mining proof-of-work, adjustment, difficulty
     mapping(uint256 => bytes32) public digestForTokenId;
     uint public epochCount; // == planetminted
-    uint public constant BLOCKS_PER_READJUSTMENT = 1024;
-    uint public constant MINING_RATE_FACTOR = 60; //mint the token 60 times less often than ether
+    uint public constant ITEM_PER_READJUSTMENT = 10;
+    uint public constant MINING_RATE_FACTOR = 180; //mint the token 60 times less often than ether
     uint public latestDifficultyPeriodStarted;
     uint public constant MINIMUM_TARGET_DIFFICULTY = 2 ** 16;
-    uint public constant MAXIMUM_TARGET_DIFFICULTY = 2 ** 245; // TODO: should change to 234?
+    uint public constant MAXIMUM_TARGET_DIFFICULTY = 2 ** 236; // TODO: should change to 234?
     uint public constant TARGET_DIVISOR = 2000;
     uint public constant QUOTIENT_LIMIT = TARGET_DIVISOR / 2;
     uint public constant MAX_ADJUSTMENT_PERCENT = 100;
@@ -237,8 +237,8 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
         }
         epochCount = ++epochCount;
 
-        // adjust difficulty every 1024 blocks
-        if (epochCount % BLOCKS_PER_READJUSTMENT == 0) {
+        // adjust difficulty every 10 items minted
+        if (epochCount % ITEM_PER_READJUSTMENT == 0) {
             _adjustDifficulty();
         }
 
@@ -248,15 +248,15 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
     }
 
     function _adjustDifficulty() internal virtual override returns (uint) {
-        if (epochCount % BLOCKS_PER_READJUSTMENT != 0) {
+        if (epochCount % ITEM_PER_READJUSTMENT != 0) {
             return difficulty;
         }
 
         uint ethBlocksSinceLastDifficultyPeriod = block.number -
             latestDifficultyPeriodStarted;
-        //assume 360 ethereum blocks per hour
+        //assume 1800 goerli base blocks per hour
         //we want miners to spend 10 minutes to mine each 'block', about 60 ethereum blocks = one 0xbitcoin epoch
-        uint epochsMined = BLOCKS_PER_READJUSTMENT;
+        uint epochsMined = ITEM_PER_READJUSTMENT;
         uint targetEthBlocksPerDiffPeriod = epochsMined * MINING_RATE_FACTOR;
 
         //if there were less eth blocks passed in time than expected
