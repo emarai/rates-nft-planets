@@ -18,7 +18,7 @@ contract PlanetsTest is Test {
         bytes32 challengeNumber,
         address sender,
         uint256 difficulty
-    ) public view returns (uint256 nonce) {
+    ) public pure returns (uint256 nonce) {
         while (true) {
             nonce += 1;
             // console.log("nonce generated %s", nonce);

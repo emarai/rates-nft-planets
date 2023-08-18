@@ -49,6 +49,7 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
     // future variables
 
     event DifficultyChange(uint difficulty);
+    event ChallengeNumberChange(bytes32 challengeNumber);
 
     function initialize(
         string memory _name,
@@ -115,6 +116,8 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
         if (rtsBonus > 0) {
             rtsBonusForTokenId[currentTokenId] = rtsBonus;
         }
+
+        _newEpoch(rtsForPlanet + rtsBonus);
         tokensMinted += rtsForPlanet + rtsBonus;
 
         // TODO: diagnostics
@@ -243,6 +246,7 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
         }
 
         challengeNumber = blockhash(block.number - 1);
+        emit ChallengeNumberChange(challengeNumber);
 
         return epochCount;
     }
