@@ -2,12 +2,12 @@
 pragma solidity ^0.8.13;
 
 import "solmate/utils/FixedPointMathLib.sol";
-import "solmate/tokens/ERC721.sol";
+import "openzeppelin-contracts-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "./AbstractERC918.sol";
 
-contract Planets is AbstractERC918, ERC721, Ownable {
+contract Planets is AbstractERC918, ERC721Upgradeable {
     using Strings for uint256;
     uint256 public currentTokenId;
     string public baseUri;
@@ -19,53 +19,54 @@ contract Planets is AbstractERC918, ERC721, Ownable {
     // mining proof-of-work, adjustment, difficulty
     mapping(uint256 => bytes32) public digestForTokenId;
     uint public epochCount; // == planetminted
-    uint public BLOCKS_PER_READJUSTMENT = 1024;
-    uint public MINING_RATE_FACTOR = 60; //mint the token 60 times less often than ether
+    uint public constant BLOCKS_PER_READJUSTMENT = 1024;
+    uint public constant MINING_RATE_FACTOR = 60; //mint the token 60 times less often than ether
     uint public latestDifficultyPeriodStarted;
-    uint public MINIMUM_TARGET_DIFFICULTY = 2 ** 16;
-    uint public MAXIMUM_TARGET_DIFFICULTY = 2 ** 245; // TODO: should change to 234?
-    uint public TARGET_DIVISOR = 2000;
-    uint public QUOTIENT_LIMIT = TARGET_DIVISOR / 2;
-    uint public MAX_ADJUSTMENT_PERCENT = 100;
+    uint public constant MINIMUM_TARGET_DIFFICULTY = 2 ** 16;
+    uint public constant MAXIMUM_TARGET_DIFFICULTY = 2 ** 245; // TODO: should change to 234?
+    uint public constant TARGET_DIVISOR = 2000;
+    uint public constant QUOTIENT_LIMIT = TARGET_DIVISOR / 2;
+    uint public constant MAX_ADJUSTMENT_PERCENT = 100;
 
     // mining reward
-    uint8 public decimals = 18;
-    uint public startingAverageReward = 1000 * 10 ** uint(decimals);
-    uint public rewardEra = 0;
-    uint public maxSupplyForEra = 1000000000 * 10 ** uint(decimals);
-    uint public totalRtsPerEra = 0;
-    uint public BASE_REWARD = 250;
+    uint8 public constant decimals = 18;
+    uint public constant startingAverageReward = 1000 * 10 ** uint(decimals);
+    uint public rewardEra;
+    uint public constant maxSupplyForEra = 1000000000 * 10 ** uint(decimals);
+    uint public totalRtsPerEra;
+    uint public constant BASE_REWARD = 250;
 
     // mining rig
-    uint public miningRigUpgradePrice = 0.03 ether;
-    uint8 public MAXIMUM_RIG_LEVEL = 10;
-    uint8[] public miningRigPercentage = [
-        0,
-        5,
-        10,
-        15,
-        22,
-        29,
-        36,
-        46,
-        56,
-        66,
-        80
-    ];
+    uint public miningRigUpgradePrice;
+    uint8 public maximumRigLevel;
+    uint8[] public miningRigPercentage;
     mapping(address => uint8) public miningRigForAddress;
     mapping(uint256 => uint256) public rtsBonusForTokenId;
 
+    // upgradable
+    address public owner;
+
+    // future variables
+
     event DifficultyChange(uint difficulty);
 
-    constructor(
+    function initialize(
         string memory _name,
         string memory _symbol,
         string memory _baseUri
-    ) ERC721(_name, _symbol) {
+    ) public initializer {
+        require(owner == address(0));
+
+        owner = msg.sender;
+
         setBaseUri(_baseUri);
         challengeNumber = blockhash(block.number - 1);
         latestDifficultyPeriodStarted = block.number;
         difficulty = MAXIMUM_TARGET_DIFFICULTY;
+        miningRigUpgradePrice = 0.03 ether;
+        maximumRigLevel = 10;
+        miningRigPercentage = [0, 5, 10, 15, 22, 29, 36, 46, 56, 66, 80];
+        __ERC721_init(_name, _symbol);
     }
 
     // NFT Functions
@@ -129,13 +130,13 @@ contract Planets is AbstractERC918, ERC721, Ownable {
 
         uint8 level = miningRigForAddress[msg.sender] + amount;
 
-        require(level <= MAXIMUM_RIG_LEVEL);
+        require(level <= maximumRigLevel);
 
         miningRigForAddress[msg.sender] = level;
     }
 
     function withdraw() public onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+        payable(owner).transfer(address(this).balance);
     }
 
     function _hash(
@@ -165,7 +166,7 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         return difficulty;
     }
 
-    function getMiningReward() public view returns (uint) {
+    function getMiningReward() public pure returns (uint) {
         return startingAverageReward;
     }
 
@@ -322,5 +323,13 @@ contract Planets is AbstractERC918, ERC721, Ownable {
         if (a > b) return b;
 
         return a;
+    }
+
+    modifier onlyOwner() {
+        require(
+            msg.sender == owner,
+            "Only owner is allowed to perform this action"
+        );
+        _;
     }
 }

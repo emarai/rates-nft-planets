@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 const hre = require("hardhat");
 const { time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { mine } = require("@nomicfoundation/hardhat-network-helpers");
@@ -8,13 +8,14 @@ const { solveChallenge } = require("../script/utils");
 const BASE_REWARD = 250n;
 
 describe("Planets", function () {
-
   async function deployContract() {
     const [owner] = await ethers.getSigners();
 
     const Planets = await ethers.getContractFactory("Planets");
 
-    const planets = await Planets.deploy(
+    const planets = await Planets.deploy();
+
+    await planets.initialize(
       "RatesPlanets",
       "RP",
       "https://ratesprotocol.com/api/json/"
@@ -28,7 +29,9 @@ describe("Planets", function () {
 
     const { planets, owner } = await deployContract();
 
-    await planets.upgradeMiningRig(10, { value: ethers.parseEther((0.03 * 10).toString()) });
+    await planets.upgradeMiningRig(10, {
+      value: ethers.parseEther((0.03 * 10).toString()),
+    });
 
     const currentMiningRig = await planets.miningRigForAddress(owner.address);
 
@@ -60,13 +63,10 @@ describe("Planets", function () {
     rts += (rts * 80n) / 100n;
     rts += (rts * planetZoneMultiplier) / 100n;
 
-
-    const [
-      rtsContract,
-    ] = await planets.getTotalStatsPerTokenId("1");
+    const [rtsContract] = await planets.getTotalStatsPerTokenId("1");
 
     expect(rts).to.equal(rtsContract);
-  })
+  });
   it("Should mint with correct stats", async function () {
     await mine(1000);
 
@@ -87,7 +87,7 @@ describe("Planets", function () {
     console.log("hash", hash);
 
     const hashCheck = await planets.checkHash(nonce, hash);
-    console.log(hashCheck)
+    console.log(hashCheck);
     expect(hashCheck).to.equal(hash);
 
     await planets.mint(nonce, hash);
@@ -142,29 +142,43 @@ describe("Planets", function () {
     expect(mrts).to.equal(mrtsContract);
     expect(x).to.equal(xContract);
     expect(y).to.equal(yContract);
-
   });
 
   it("getPlanetZone should work", async function () {
-
     const { planets, owner } = await deployContract();
 
     const planetZone = await planets.getPlanetZone(0, 0);
 
     expect(planetZone).to.equal(getPlanetZone(0n, 0n));
+  });
 
-  })
+  it("Upgrade works", async () => {
+    const Planets = await ethers.getContractFactory("Planets");
+    const PlanetsV2 = await ethers.getContractFactory("PlanetsV2");
+
+    const instance = await upgrades.deployProxy(Planets, [
+      "RatesPlanets",
+      "RP",
+      "",
+    ]);
+    const upgraded = await upgrades.upgradeProxy(
+      await instance.getAddress(),
+      PlanetsV2
+    );
+
+    const value = await upgraded.value();
+    expect(value.toString()).to.equal("42");
+  });
 
   function getPlanetZone(x, y) {
     const xFromMiddle = Math.abs(parseInt((x - 500n).toString()));
     const yFromMiddle = Math.abs(parseInt((y - 500n).toString()));
 
-    console.log(xFromMiddle, yFromMiddle)
+    console.log(xFromMiddle, yFromMiddle);
 
     const distance = Math.sqrt(xFromMiddle ** 2 + yFromMiddle ** 2);
     console.log("distance", distance);
 
     return parseInt(distance / 80);
   }
-
 });

@@ -10,7 +10,8 @@ contract PlanetsTest is Test {
     address alice = makeAddr("alice");
 
     function setUp() public {
-        planetsContract = new Planets("RatesPlanets", "RP", "");
+        planetsContract = new Planets();
+        planetsContract.initialize("RatesPlanets", "RP", "");
     }
 
     function solveChallenge(
