@@ -106,7 +106,7 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
         // mint nft
         _safeMint(msg.sender, currentTokenId);
 
-        uint rtsForPlanet = uint256(digest) & 0x3e8; // RTS MASK
+        uint rtsForPlanet = 100 + (uint256(digest) & 0x3e8); // RTS MASK
 
         // bonus rts from mining rig
         uint rtsBonus = (miningRigPercentage[miningRigForAddress[msg.sender]] *
@@ -187,7 +187,7 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
 
         uint planetZoneMultiplier = getPlanetZone(x, y) * 10;
 
-        uint rts = (digest & 0x3e8) + rtsBonusForTokenId[id]; // RTS MASK
+        uint rts = 100 + (digest & 0x3e8) + rtsBonusForTokenId[id]; // RTS MASK
 
         uint prts = BASE_REWARD + ((digest >> 12) & 0x3e8); // PRTS MASK
         uint arts = BASE_REWARD + ((digest >> (12 * 2)) & 0x3e8); // ARTS MASK

@@ -59,7 +59,7 @@ describe("Planets", function () {
     const y = (hash >> (12n * 5n)) & 0x3e8n;
     const planetZoneMultiplier = BigInt(getPlanetZone(x, y)) * 10n;
 
-    let rts = hash & 0x3e8n;
+    let rts = 100n + (hash & 0x3e8n);
     rts += (rts * 80n) / 100n;
     rts += (rts * planetZoneMultiplier) / 100n;
 
@@ -102,7 +102,7 @@ describe("Planets", function () {
 
     const planetZoneMultiplier = BigInt(getPlanetZone(x, y)) * 10n;
 
-    let rts = hash & 0x3e8n;
+    let rts = 100n + (hash & 0x3e8n);
     let prts = BASE_REWARD + ((hash >> (12n * 1n)) & 0x3e8n);
     let arts = BASE_REWARD + ((hash >> (12n * 2n)) & 0x3e8n);
     let mrts = BASE_REWARD + ((hash >> (12n * 3n)) & 0x3e8n);
