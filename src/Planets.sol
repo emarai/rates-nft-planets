@@ -234,10 +234,6 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
     function _newEpoch(
         uint256 rtsMinted
     ) internal virtual override returns (uint) {
-        // decrease planet $RTS every 1 million $RTS minted (planet-wise)
-        if ((tokensMinted + rtsMinted) > maxSupplyForEra) {
-            rewardEra = rewardEra + 1;
-        }
         epochCount = ++epochCount;
 
         // adjust difficulty every 10 items minted
@@ -275,8 +271,8 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
             //make it harder
             difficulty =
                 difficulty -
-                (difficulty * excess_block_pct_extra) /
-                TARGET_DIVISOR;
+                (difficulty / TARGET_DIVISOR) *
+                excess_block_pct_extra;
             //by up to 50 %
         } else {
             uint shortage_block_pct = (ethBlocksSinceLastDifficultyPeriod *
@@ -288,7 +284,8 @@ contract Planets is AbstractERC918, ERC721Upgradeable {
             //make it easier
             difficulty =
                 difficulty +
-                ((difficulty * shortage_block_pct_extra) / TARGET_DIVISOR); //by up to 50 %
+                (difficulty / TARGET_DIVISOR) *
+                shortage_block_pct_extra; //by up to 50 %
         }
         latestDifficultyPeriodStarted = block.number;
         if (difficulty < MINIMUM_TARGET_DIFFICULTY) //very difficult

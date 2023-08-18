@@ -7,7 +7,7 @@ async function main() {
 
   const Planets = await ethers.getContractFactory("Planets");
   const planets = await Planets.attach(
-    "0xF72b546814a88DF07C0Ee772393827cd1310FC74"
+    "0xd3612Eb225F4d814b1Fd7298BFBEb8F7d8Bc6CBb"
   );
 
   const miningDifficulty = await planets.getMiningDifficulty();

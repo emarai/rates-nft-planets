@@ -142,6 +142,9 @@ describe("Planets", function () {
     expect(mrts).to.equal(mrtsContract);
     expect(x).to.equal(xContract);
     expect(y).to.equal(yContract);
+
+    const miningDifficultyAfter = await planets.getMiningDifficulty();
+    console.log("miningDifficultyAfter", miningDifficultyAfter);
   });
 
   it("getPlanetZone should work", async function () {
